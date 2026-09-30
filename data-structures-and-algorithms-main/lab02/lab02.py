@@ -181,13 +181,11 @@ class DynamicArray:
         return value
 
     def _normalize_index(self, index: int) -> int:
-        """проверка границ и поддержка отрицательных индексов."""
-        if index < 0:
-            index += self._size
+        """строгая проверка границ: 0 <= index < size."""
         if index < 0 or index >= self._size:
             raise IndexError(f"index {index} out of range for size {self._size}")
         return index
-
+    
     def get(self, index: int):
         """вернуть элемент по индексу 0 <= index < size; иначе IndexError."""
         idx = self._normalize_index(index)
