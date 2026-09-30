@@ -145,40 +145,58 @@ class DynamicArray:
 
     def _grow(self) -> None:
         """Увеличить ёмкость в 2 раза и скопировать элементы в новый буфер."""
-        # TODO: выделить новый буфер размера 2 * capacity, перенести _size элементов,
-        # увеличить self.copies на число перенесённых элементов
-        raise NotImplementedError
+        new_capacity = self._capacity * 2
+        new_buffer: list = [None] * new_capacity
+        for i in range(self._size):
+            new_buffer[i] = self._buffer[i]
+        self._buffer = new_buffer
+        self.copies += self._size   # учитываем перенос эл
+        self._capacity = new_capacity
 
     def append(self, value) -> None:
         """Добавить элемент в конец; при size == capacity сначала вызвать _grow.
-
-        Амортизированная сложность: TODO (обосновать методом учёта в отчёте).
+        Амортизированная сложность: O(1).
         """
-        # TODO: рост при необходимости, запись в ячейку _buffer[_size], инкремент _size
-        raise NotImplementedError
+        if self._size == self._capacity:
+            self._grow()
+        self._buffer[self._size] = value
+        self._size += 1
 
     def pop(self):
-        """Удалить и вернуть последний элемент; для пустого массива — IndexError.
+        """Удалить и вернуть последний элемент; для пустого массива — IndexError."""
+        if self._size == 0:
+            raise IndexError("pop from empty DynamicArray")
+        self._size -= 1
+        value = self._buffer[self._size]
+        self._buffer[self._size] = None
+        # Сжатие: только при заполнении <= capacity // 4 и не ниже INITIAL_CAPACITY
+        if self._size <= self._capacity // 4 and self._capacity > self.INITIAL_CAPACITY:
+            new_capacity = self._capacity // 2
+            new_buffer: list = [None] * new_capacity
+            for i in range(self._size):
+                new_buffer[i] = self._buffer[i]
+            self._buffer = new_buffer
+            self.copies += self._size
+            self._capacity = new_capacity
+        return value
 
-        Сжатие буфера необязательно. Если реализуете его, уменьшайте ёмкость
-        вдвое, когда size опускается до capacity // 4, и не ниже
-        INITIAL_CAPACITY (перенесённые элементы тоже учитываются в copies):
-        сжатие уже при заполнении на ½ даёт Θ(n) на операцию, если чередовать
-        append и pop на границе ёмкости.
-        """
-        # TODO: проверка на пустоту, чтение _buffer[_size - 1], очистка ячейки
-        # (None — чтобы буфер не удерживал объект), декремент _size
-        raise NotImplementedError
+    def _normalize_index(self, index: int) -> int:
+        """проверка границ и поддержка отрицательных индексов."""
+        if index < 0:
+            index += self._size
+        if index < 0 or index >= self._size:
+            raise IndexError(f"index {index} out of range for size {self._size}")
+        return index
 
     def get(self, index: int):
-        """Вернуть элемент по индексу 0 <= index < size; иначе IndexError."""
-        # TODO: проверка границ (включая отрицательные индексы) + чтение из буфера
-        raise NotImplementedError
+        """вернуть элемент по индексу 0 <= index < size; иначе IndexError."""
+        idx = self._normalize_index(index)
+        return self._buffer[idx]
 
     def set(self, index: int, value) -> None:
-        """Записать элемент по индексу 0 <= index < size; иначе IndexError."""
-        # TODO: проверка границ + запись в буфер
-        raise NotImplementedError
+        """записать элемент по индексу 0 <= index < size; иначе IndexError."""
+        idx = self._normalize_index(index)
+        self._buffer[idx] = value
 
 
 # ---------------------------------------------------------------------------
