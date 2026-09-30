@@ -214,21 +214,18 @@ class Stack:
         return len(self._data)
 
     def push(self, value) -> None:
-        """Положить элемент на вершину. Амортизированная сложность: TODO."""
-        # TODO: делегировать DynamicArray.append
-        raise NotImplementedError
+        """Положить элемент на вершину. Амортизированная сложность: O(1)."""
+        self._data.append(value)
 
     def pop(self):
         """Снять элемент с вершины; для пустого стека — IndexError."""
-        # TODO: делегировать DynamicArray.pop
-        raise NotImplementedError
+        return self._data.pop()
 
     def peek(self):
         """Вернуть вершину без удаления; для пустого стека — IndexError."""
-        # TODO: для пустого стека — IndexError с понятным сообщением,
-        # иначе DynamicArray.get(len - 1)
-        raise NotImplementedError
-
+        if len(self._data) == 0:
+            raise IndexError("peek from empty Stack")
+        return self._data.get(len(self._data) - 1)
 
 class _Node:
     """Узел двусвязного списка для Deque."""
