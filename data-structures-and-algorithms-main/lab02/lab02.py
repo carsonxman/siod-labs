@@ -643,6 +643,29 @@ def check_variant_ops(stack_ops: list[Op], deque_ops: list[Op]) -> None:
     compare_with_reference(deque_ops, deque_methods(Deque()),
                            std_deque_methods(collections.deque()), "ops_deque.txt")
 
+def check_own_invariants() -> None:
+    """Собственные проверки инвариантов (дополнение к self_check)."""
+    
+    # DynamicArray: pop обнуляет ячейку (нет утечки ссылок)
+    arr = DynamicArray()
+    for i in range(10):
+        arr.append(i)
+    arr.pop()
+    expect(arr._buffer[9] is None, "после pop() ячейка должна быть None (очистка ссылки)")
+    
+    # Deque: после полного опустошения head и tail оба None
+    dq = Deque()
+    dq.push_front(1)
+    dq.push_back(2)
+    dq.pop_front()
+    dq.pop_back()
+    expect(dq._head is None and dq._tail is None, 
+           "после pop до нуля head и tail должны быть None")
+    
+    # Deque: при size == 1 head и tail указывают на один узел
+    dq = Deque()
+    dq.push_front(42)
+    expect(dq._head is dq._tail, "при size==1 head и tail должны совпадать")
 
 def self_check(stack_ops: list[Op], deque_ops: list[Op]) -> None:
     """Все проверки по разделам; при любой ошибке замеры не выполняются."""
@@ -651,6 +674,7 @@ def self_check(stack_ops: list[Op], deque_ops: list[Op]) -> None:
         ("DynamicArray", check_dynamic_array),
         ("Stack", check_stack),
         ("Deque", check_deque),
+        ("собственные инварианты", check_own_invariants),
         ("операции варианта", lambda: check_variant_ops(stack_ops, deque_ops)),
     )
     failed = 0
