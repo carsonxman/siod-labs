@@ -60,43 +60,59 @@ CALLS = {"fib_naive": 0, "fib_memo": 0}  # счётчики рекурсивны
 
 
 def factorial(n: int) -> int:
-    """Факториал n >= 0 рекурсивно. Ожидаемая сложность: TODO (обосновать в отчёте)."""
-    # TODO: базовое условие + рекурсивный переход
-    raise NotImplementedError
+    """Факториал n >= 0 рекурсивно. Ожидаемая сложность: O(n)."""
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
 
 
 def fib_naive(n: int) -> int:
     """n-е число Фибоначчи наивной рекурсией; увеличивает CALLS["fib_naive"].
-
-    Ожидаемая сложность: TODO (экспоненциальная — показать счётчиком вызовов).
+    Ожидаемая сложность: O(φ^n), где φ = (1 + √5)/2 ≈ 1.618 (экспоненциальная).
     """
     CALLS["fib_naive"] += 1
-    # TODO: F(0)=0, F(1)=1, далее F(n)=F(n-1)+F(n-2)
-    raise NotImplementedError
+    if n == 0:
+        return 0
+    if n == 1:
+        return 1
+    return fib_naive(n - 1) + fib_naive(n - 2)
 
 
 def fib_memo(n: int, memo: dict[int, int] | None = None) -> int:
     """n-е число Фибоначчи с мемоизацией; увеличивает CALLS["fib_memo"].
-
-    Ожидаемая сложность: TODO (линейная — сравнить счётчики в отчёте).
+    Ожидаемая сложность: O(n) — каждый F(k) вычисляется один раз.
     """
     CALLS["fib_memo"] += 1
-    # TODO: словарь memo передаётся по рекурсии; повторные подзадачи не пересчитываются
-    raise NotImplementedError
+    if memo is None:
+        memo = {}
+    if n in memo:
+        return memo[n]
+    if n == 0:
+        result = 0
+    elif n == 1:
+        result = 1
+    else:
+        result = fib_memo(n - 1, memo) + fib_memo(n - 2, memo)
+    memo[n] = result
+    return result
 
 
 def hanoi(n: int, src: str = "A", dst: str = "C", aux: str = "B",
           moves: list[tuple[str, str]] | None = None) -> int:
-    """Ханойские башни: перенести n дисков со стержня src на dst, вернуть число перемещений.
-
-    Если передан список moves, каждое перемещение верхнего диска дописывается
-    в него парой (откуда, куда). self_check проигрывает эти ходы и проверяет,
-    что больший диск ни разу не кладётся на меньший, все диски оказываются
-    на dst, а число перемещений равно 2**n - 1.
-    """
-    # TODO: базовое условие n == 0; иначе перенести n-1 на aux, 1 на dst, n-1 на dst
-    # (moves передаётся во все рекурсивные вызовы)
-    raise NotImplementedError
+    """Ханойские башни: перенести n дисков со стержня src на dst, вернуть число перемещений."""
+    
+    if moves is None:
+        moves = []
+    if n == 0:
+        return 0
+    # 1) переносим n-1 верхних дисков с src на aux (через dst как вспомогательный)
+    count = hanoi(n - 1, src, aux, dst, moves)
+    # 2) переносим самый большой диск с src на dst
+    moves.append((src, dst))
+    count += 1
+    # 3) переносим n-1 дисков с aux на dst (через src как вспомогательный)
+    count += hanoi(n - 1, aux, dst, src, moves)
+    return count
 
 
 # ---------------------------------------------------------------------------
