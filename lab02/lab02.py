@@ -254,24 +254,54 @@ class Deque:
         return self._size
 
     def push_front(self, value) -> None:
-        """Добавить элемент в начало. Сложность: TODO."""
-        # TODO: создать узел, перевязать ссылки head (учесть пустой дек)
-        raise NotImplementedError
+        """Добавить элемент в начало. Сложность: O(1)."""
+        new_node = _Node(value, prev=None, next=self._head)
+        if self._head is not None:
+            self._head.prev = new_node
+        else:
+            # дек был пустой — tail тоже указывает на новый узел
+            self._tail = new_node
+        self._head = new_node
+        self._size += 1
 
     def push_back(self, value) -> None:
-        """Добавить элемент в конец. Сложность: TODO."""
-        # TODO: симметрично push_front для tail
-        raise NotImplementedError
-
+        """Добавить элемент в конец. Сложность: O(1)."""
+        new_node = _Node(value, prev=self._tail, next=None)
+        if self._tail is not None:
+            self._tail.next = new_node
+        else:
+            # дек был пустой — head тоже указывает на новый узел
+            self._head = new_node
+        self._tail = new_node
+        self._size += 1
+    
     def pop_front(self):
         """Извлечь элемент из начала; для пустого дека — IndexError."""
-        # TODO: учесть переход к пустому деку (tail тоже обнуляется)
-        raise NotImplementedError
+        if self._head is None:
+            raise IndexError("pop_front from empty Deque")
+        value = self._head.value
+        self._head = self._head.next
+        if self._head is not None:
+            self._head.prev = None
+        else:
+            # дек стал пустым — обнуляем и tail
+            self._tail = None
+        self._size -= 1
+        return value
 
     def pop_back(self):
         """Извлечь элемент из конца; для пустого дека — IndexError."""
-        # TODO: симметрично pop_front (при опустошении обнуляется и head)
-        raise NotImplementedError
+        if self._tail is None:
+            raise IndexError("pop_back from empty Deque")
+        value = self._tail.value
+        self._tail = self._tail.prev
+        if self._tail is not None:
+            self._tail.next = None
+        else:
+            # дек стал пустым — обнуляем и head
+            self._head = None
+        self._size -= 1
+        return value
 
 
 # ---------------------------------------------------------------------------
