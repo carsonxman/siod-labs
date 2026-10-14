@@ -11,10 +11,16 @@
 from __future__ import annotations
 
 import argparse
+import math
 import random
 import statistics
 import time
+from pathlib import Path
 
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    raise SystemExit("Ошибка: matplotlib не найден.")
 # ---------------------------------------------------------------------------
 # 1. Простые сортировки со счётчиками (сортируют КОПИЮ входа, вход не меняют)
 #    Каждая функция возвращает кортеж: (отсортированный список,
@@ -161,38 +167,46 @@ def stability_demo() -> None:
     data = [(2, "a"), (1, "b"), (2, "c"), (1, "d"), (3, "e"), (2, "f")]
     print(f"Исходный массив: {data}")
     
-    # Bubble sort (стабильная)
-    bubble_res, _, _ = bubble_sort(data)
-    print(f"\n1. Bubble Sort (пузырьком):")
-    print(f"   Результат: {bubble_res}")
-    print(f"   Метки при ключе 1: {[p[1] for p in bubble_res if p[0] == 1]}")
-    print(f"   Метки при ключе 2: {[p[1] for p in bubble_res if p[0] == 2]}")
-    print(f"   → СТАБИЛЬНА (порядок меток сохранён: b,d и a,c,f)")
-    
-    # Insertion sort (стабильная)
-    insertion_res, _, _ = insertion_sort(data)
-    print(f"\n2. Insertion Sort (вставками):")
-    print(f"   Результат: {insertion_res}")
-    print(f"   Метки при ключе 1: {[p[1] for p in insertion_res if p[0] == 1]}")
-    print(f"   Метки при ключе 2: {[p[1] for p in insertion_res if p[0] == 2]}")
-    print(f"   → СТАБИЛЬНА (порядок меток сохранён)")
-    
-    # Selection sort (нестабильная)
-    selection_res, _, _ = selection_sort(data)
-    print(f"\n3. Selection Sort (выбором):")
-    print(f"   Результат: {selection_res}")
-    print(f"   Метки при ключе 1: {[p[1] for p in selection_res if p[0] == 1]}")
-    print(f"   Метки при ключе 2: {[p[1] for p in selection_res if p[0] == 2]}")
-    print(f"   → НЕСТАБИЛЬНА (порядок меток может нарушаться)")
-    
-    # QuickSort (нестабильная)
-    quick_res = quick_sort(data, random.Random(42))
-    print(f"\n4. Quick Sort (быстрая):")
-    print(f"   Результат: {quick_res}")
-    print(f"   Метки при ключе 1: {[p[1] for p in quick_res if p[0] == 1]}")
-    print(f"   Метки при ключе 2: {[p[1] for p in quick_res if p[0] == 2]}")
-    print(f"   → НЕСТАБИЛЬНА (порядок меток может нарушаться)")
-    
+    # Вспомогательная функция для проверки стабильности
+    def check_stability(result_list: list[tuple[int, str]], original_list: list[tuple[int, str]]) -> bool:
+        # Группируем метки по ключам в исходном списке
+        orig_groups = {}
+        for k, v in original_list:
+            orig_groups.setdefault(k, []).append(v)
+        
+        # Группируем метки по ключам в отсортированном списке
+        res_groups = {}
+        for k, v in result_list:
+            res_groups.setdefault(k, []).append(v)
+            
+        # Сравниваем порядок внутри групп
+        for k in orig_groups:
+            if orig_groups[k] != res_groups.get(k, []):
+                return False
+        return True
+
+    algorithms = [
+        ("Bubble Sort", bubble_sort(data)[0]),
+        ("Insertion Sort", insertion_sort(data)[0]),
+        ("Selection Sort", selection_sort(data)[0]),
+        ("QuickSort", quick_sort(data, random.Random(42))),
+    ]
+
+    for name, res in algorithms:
+        is_stable = check_stability(res, data)
+        status = "СТАБИЛЬНА" if is_stable else "НЕСТАБИЛЬНА"
+        
+        print(f"\n{name}: {status}")
+        print(f"   Результат: {res}")
+        
+        # Выводим детали только если интересно (можно убрать, чтобы не спамить консоль)
+        keys_in_res = sorted(set(k for k, _ in res))
+        for k in keys_in_res:
+            labels_orig = [v for kk, v in data if kk == k]
+            labels_res = [v for kk, v in res if kk == k]
+            match_str = "✓" if labels_orig == labels_res else "✗ НАРУШЕН"
+            print(f"   Ключ {k}: было {labels_orig} -> стало {labels_res} [{match_str}]")
+
     print("\n=== ВЫВОДЫ О СТАБИЛЬНОСТИ ===")
     print("Стабильные: Bubble Sort, Insertion Sort")
     print("Нестабильные: Selection Sort, QuickSort")
@@ -283,34 +297,186 @@ def bench(fn, data: list) -> float:
     return statistics.median(times)
 
 
-def run_benchmarks(seed: int) -> None:
-    """Замеры всех алгоритмов на трёх классах входов; результат — таблица в stdout."""
+def estimate_slope(points: list[tuple[int, float]]) -> float:
+    if len(points) < 2:
+        return float("nan")
+
+    xs = []
+    ys = []
+
+    for n, t in points:
+        if n <= 0:
+            continue
+        xs.append(math.log10(n))
+        ys.append(math.log10(max(t, 1e-12)))
+
+    if len(xs) < 2:
+        return float("nan")
+
+    x_mean = sum(xs) / len(xs)
+    y_mean = sum(ys) / len(ys)
+
+    numerator = sum((x - x_mean) * (y - y_mean) for x, y in zip(xs, ys))
+    denominator = sum((x - x_mean) * (x - x_mean) for x in xs)
+
+    if denominator == 0.0:
+        return float("nan")
+
+    return numerator / denominator
+
+
+def plot_results(results: dict, variant: int) -> None:
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    axes = axes.ravel()
+
+    algorithms = ["bubble_sort", "insertion_sort", "selection_sort", "quick_sort"]
+    titles = {
+        "bubble_sort": "Bubble Sort",
+        "insertion_sort": "Insertion Sort",
+        "selection_sort": "Selection Sort",
+        "quick_sort": "QuickSort",
+    }
+    colors = {
+        "упорядоченный": "green",
+        "случайный": "blue",
+        "обратный": "red",
+    }
+
+    for idx, alg in enumerate(algorithms):
+        ax = axes[idx]
+        data = results[alg]
+
+        for cls in ["упорядоченный", "случайный", "обратный"]:
+            points = data[cls]
+            sizes = [p[0] for p in points]
+            times = [max(p[1], 1e-12) for p in points]
+            ax.loglog(
+                sizes,
+                times,
+                "o-",
+                label=cls,
+                color=colors[cls],
+                linewidth=2,
+                markersize=6,
+            )
+
+        ref_points = data["случайный"]
+        if ref_points:
+            first_n, raw_first_t = ref_points[0]
+            first_t = max(raw_first_t, 1e-12)
+            n_ref = [p[0] for p in ref_points]
+
+            if alg == "quick_sort":
+                if first_n > 1:
+                    base = first_n * math.log2(first_n)
+                    if base > 0:
+                        t_ref = []
+                        for n in n_ref:
+                            if n > 1:
+                                t_ref.append(first_t * (n * math.log2(n) / base))
+                            else:
+                                t_ref.append(first_t)
+
+                        ax.loglog(
+                            n_ref,
+                            t_ref,
+                            "--",
+                            color="gray",
+                            alpha=0.6,
+                            label="ориентир O(n log n)",
+                        )
+            else:
+                if first_n > 0:
+                    t_ref = [first_t * ((n / first_n) ** 2) for n in n_ref]
+                    ax.loglog(
+                        n_ref,
+                        t_ref,
+                        "--",
+                        color="gray",
+                        alpha=0.6,
+                        label="ориентир O(n^2)",
+                    )
+
+        ax.set_xlabel("Размер входа n")
+        ax.set_ylabel("Время, с")
+        ax.set_title(titles[alg])
+        ax.legend()
+        ax.grid(True, which="both", alpha=0.3)
+
+    fig.suptitle(f"ЛР 3. Сравнение сортировок, вариант {variant}", fontsize=15)
+    plt.tight_layout()
+
+    out_path = Path(__file__).resolve().with_name(f"lab03_graphs_variant{variant}.png")
+    plt.savefig(out_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+    print(f"График сохранён: {out_path.name}")
+
+
+def print_counters_table(seed: int) -> None:
+    sizes = [100, 500, 1000]
+
+    print("\n=== ТАБЛИЦЫ СЧЁТЧИКОВ ===")
+
+    for alg_name, alg_func in [
+        ("Bubble Sort", bubble_sort),
+        ("Insertion Sort", insertion_sort),
+        ("Selection Sort", selection_sort),
+    ]:
+        print(f"\n{alg_name}:")
+        print(f"{'n':>6} | {'Класс':<13} | {'Сравнения':>10} | {'Обмены/Сдвиги':>14}")
+        print("-" * 58)
+
+        for n in sizes:
+            inputs = make_inputs(n, seed)
+            for cls, data in inputs.items():
+                _, comp, moves = alg_func(data)
+                print(f"{n:>6} | {cls:<13} | {comp:>10} | {moves:>14}")
+
+
+def run_benchmarks(seed: int, variant: int) -> None:
+    print("\n=== БЕНЧМАРКИ ===")
+    print(f"Вариант: {variant}, Seed: {seed}")
+
     plans = [
         ("bubble_sort", ALGORITHMS["bubble_sort"], SIZES_QUADRATIC),
         ("insertion_sort", ALGORITHMS["insertion_sort"], SIZES_QUADRATIC),
         ("selection_sort", ALGORITHMS["selection_sort"], SIZES_QUADRATIC),
         ("quick_sort", lambda a: quick_sort(a, random.Random(seed)), SIZES_QUICK),
     ]
+
+    # Структура: {alg_name: {class_name: [(size, time), ...]}}
+    results = {}
+
     for name, fn, sizes in plans:
         print(f"\n{name}:")
+        results[name] = {"упорядоченный": [], "случайный": [], "обратный": []}
+        
         for n in sizes:
-            for cls, data in make_inputs(n, seed).items():
-                print(f"  n={n:>7}  вход={cls:<13} t={bench(fn, data):.6f} c")
-    # TODO: построить log-log графики (matplotlib) по классам входов;
-    # TODO: сопоставить наклоны с O(n^2) и O(n log n), объяснить расхождения
-    #       (в т. ч. лучший случай вставок и поведение пузырька на упорядоченном входе);
-    # TODO: включить в отчёт таблицы счётчиков сравнений/обменов.
+            inputs = make_inputs(n, seed)
+            for cls, data in inputs.items():
+                t = bench(fn, data)
+                results[name][cls].append((n, t))
+                print(f"  n={n:>7}  вход={cls:<13} t={t:.6f} c")
+
+    # Вызываем построение графиков ПЕРЕД выходом из функции
+    plot_results(results, variant)
+    
+    # Опционально: таблицы счетчиков
+    print_counters_table(seed)
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--variant", type=int, required=True, help="номер варианта")
+    ap = argparse.ArgumentParser(description="ЛР 3")
+    ap.add_argument("--variant", type=int, required=True)
     args = ap.parse_args()
+
     seed = 30 + args.variant
     random.seed(seed)
+
     self_check()
     stability_demo()
-    run_benchmarks(seed)
+    run_benchmarks(seed, args.variant)
 
 
 if __name__ == "__main__":
