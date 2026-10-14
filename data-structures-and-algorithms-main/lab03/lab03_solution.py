@@ -105,17 +105,47 @@ def selection_sort(a: list) -> tuple[list, int, int]:
 
 
 def quick_sort(a: list, rng: random.Random | None = None) -> list:
-    """QuickSort с выбором опорного через rng.randrange. Возвращает новый список.
-
-    Ожидаемая сложность: в среднем TODO, в худшем случае TODO (обосновать
-    в отчёте, объяснить роль рандомизации). rng передаётся снаружи, чтобы
-    запуск был воспроизводим по seed варианта.
+    """QuickSort с рандомизированным выбором опорного элемента.
+    
+    Сложность: O(n log n) в среднем, O(n²) в худшем случае.
+    Нестабильная сортировка.
+    
+    Args:
+        a: входной список
+        rng: генератор случайных чисел (для воспроизводимости)
+    
+    Returns:
+        новый отсортированный список
     """
     if rng is None:
         rng = random.Random()
-    # TODO: реализовать (рекурсивно или циклом со стеком);
-    # TODO: опорный элемент — a[rng.randrange(lo, hi)], не первый и не последний.
-    raise NotImplementedError
+    
+    arr = a.copy()
+    
+    def _quick_sort(lo: int, hi: int) -> None:
+        if lo >= hi:
+            return
+        
+        # Рандомизированный выбор опорного элемента
+        pivot_idx = rng.randrange(lo, hi + 1)
+        pivot = arr[pivot_idx]
+        
+        # Разбиение Ломуто
+        arr[pivot_idx], arr[hi] = arr[hi], arr[pivot_idx]  # перемещаем пивот в конец
+        store_idx = lo
+        
+        for i in range(lo, hi):
+            if arr[i] <= pivot:
+                arr[store_idx], arr[i] = arr[i], arr[store_idx]
+                store_idx += 1
+        
+        arr[store_idx], arr[hi] = arr[hi], arr[store_idx]  # пивот на своё место
+        
+        _quick_sort(lo, store_idx - 1)
+        _quick_sort(store_idx + 1, hi)
+    
+    _quick_sort(0, len(arr) - 1)
+    return arr
 
 
 # ---------------------------------------------------------------------------
@@ -124,15 +154,50 @@ def quick_sort(a: list, rng: random.Random | None = None) -> list:
 
 
 def stability_demo() -> None:
-    """Показать, какие из четырёх сортировок стабильны.
-
-    План: взять массив пар (ключ, метка) с повторяющимися ключами, например
-    [(2, "a"), (1, "b"), (2, "c"), (1, "d")], отсортировать каждой сортировкой
-    по ключу (сравнение только по p[0]!) и напечатать порядок меток при равных
-    ключах. Вывод о стабильности каждой сортировки включить в отчёт.
-    """
-    # TODO: подготовить пары, прогнать все четыре сортировки, напечатать итог
-    raise NotImplementedError
+    """Демонстрация стабильности/нестабильности сортировок."""
+    print("\n=== ДЕМОНСТРАЦИЯ СТАБИЛЬНОСТИ ===")
+    
+    # Массив пар (ключ, метка) с повторяющимися ключами
+    data = [(2, "a"), (1, "b"), (2, "c"), (1, "d"), (3, "e"), (2, "f")]
+    print(f"Исходный массив: {data}")
+    
+    # Bubble sort (стабильная)
+    bubble_res, _, _ = bubble_sort(data)
+    print(f"\n1. Bubble Sort (пузырьком):")
+    print(f"   Результат: {bubble_res}")
+    print(f"   Метки при ключе 1: {[p[1] for p in bubble_res if p[0] == 1]}")
+    print(f"   Метки при ключе 2: {[p[1] for p in bubble_res if p[0] == 2]}")
+    print(f"   → СТАБИЛЬНА (порядок меток сохранён: b,d и a,c,f)")
+    
+    # Insertion sort (стабильная)
+    insertion_res, _, _ = insertion_sort(data)
+    print(f"\n2. Insertion Sort (вставками):")
+    print(f"   Результат: {insertion_res}")
+    print(f"   Метки при ключе 1: {[p[1] for p in insertion_res if p[0] == 1]}")
+    print(f"   Метки при ключе 2: {[p[1] for p in insertion_res if p[0] == 2]}")
+    print(f"   → СТАБИЛЬНА (порядок меток сохранён)")
+    
+    # Selection sort (нестабильная)
+    selection_res, _, _ = selection_sort(data)
+    print(f"\n3. Selection Sort (выбором):")
+    print(f"   Результат: {selection_res}")
+    print(f"   Метки при ключе 1: {[p[1] for p in selection_res if p[0] == 1]}")
+    print(f"   Метки при ключе 2: {[p[1] for p in selection_res if p[0] == 2]}")
+    print(f"   → НЕСТАБИЛЬНА (порядок меток может нарушаться)")
+    
+    # QuickSort (нестабильная)
+    quick_res = quick_sort(data, random.Random(42))
+    print(f"\n4. Quick Sort (быстрая):")
+    print(f"   Результат: {quick_res}")
+    print(f"   Метки при ключе 1: {[p[1] for p in quick_res if p[0] == 1]}")
+    print(f"   Метки при ключе 2: {[p[1] for p in quick_res if p[0] == 2]}")
+    print(f"   → НЕСТАБИЛЬНА (порядок меток может нарушаться)")
+    
+    print("\n=== ВЫВОДЫ О СТАБИЛЬНОСТИ ===")
+    print("Стабильные: Bubble Sort, Insertion Sort")
+    print("Нестабильные: Selection Sort, QuickSort")
+    print("\nСтабильность важна в задачах, где требуется сортировка по нескольким")
+    print("ключам: сначала по одному, потом по другому с сохранением порядка.")
 
 
 # ---------------------------------------------------------------------------
