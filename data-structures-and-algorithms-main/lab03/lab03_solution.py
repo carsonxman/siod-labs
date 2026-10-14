@@ -23,25 +23,80 @@ import time
 
 
 def bubble_sort(a: list) -> tuple[list, int, int]:
-    """Сортировка пузырьком. Ожидаемая сложность: TODO (обосновать в отчёте).
-
-    Подсказка: досрочный выход, если за проход не было ни одного обмена, —
-    именно он даёт лучший случай на упорядоченном входе.
+    """Сортировка пузырьком со счётчиками.
+    
+    Сложность: O(n²) в среднем и худшем случае, O(n) в лучшем (упорядоченный вход).
+    Стабильная сортировка.
     """
-    # TODO: реализовать; считать сравнения и обмены
-    raise NotImplementedError
+    arr = a.copy()
+    n = len(arr)
+    comparisons = 0
+    swaps = 0
+    
+    for i in range(n - 1):
+        swapped = False
+        for j in range(n - 1 - i):
+            comparisons += 1
+            if arr[j] > arr[j + 1]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+                swaps += 1
+                swapped = True
+        if not swapped:  # досрочный выход — массив уже отсортирован
+            break
+    
+    return arr, comparisons, swaps
 
 
 def insertion_sort(a: list) -> tuple[list, int, int]:
-    """Сортировка вставками. Ожидаемая сложность: TODO (лучший/худший случаи)."""
-    # TODO: реализовать; считать сравнения и перемещения (сдвиги)
-    raise NotImplementedError
+    """Сортировка вставками со счётчиками.
+    
+    Сложность: O(n²) в среднем и худшем случае, O(n) в лучшем (упорядоченный вход).
+    Стабильная сортировка.
+    """
+    arr = a.copy()
+    n = len(arr)
+    comparisons = 0
+    shifts = 0  # перемещения (сдвиги элементов)
+    
+    for i in range(1, n):
+        key = arr[i]
+        j = i - 1
+        # Сдвигаем элементы, большие key, на одну позицию вправо
+        while j >= 0:
+            comparisons += 1
+            if arr[j] > key:
+                arr[j + 1] = arr[j]
+                shifts += 1
+                j -= 1
+            else:
+                break
+        arr[j + 1] = key
+    
+    return arr, comparisons, shifts
 
 
 def selection_sort(a: list) -> tuple[list, int, int]:
-    """Сортировка выбором. Ожидаемая сложность: TODO (почему не зависит от входа?)."""
-    # TODO: реализовать; считать сравнения и обмены
-    raise NotImplementedError
+    """Сортировка выбором со счётчиками.
+    
+    Сложность: O(n²) сравнений на ЛЮБОМ входе (всегда n*(n-1)/2 сравнений).
+    Нестабильная сортировка.
+    """
+    arr = a.copy()
+    n = len(arr)
+    comparisons = 0
+    swaps = 0
+    
+    for i in range(n - 1):
+        min_idx = i
+        for j in range(i + 1, n):
+            comparisons += 1
+            if arr[j] < arr[min_idx]:
+                min_idx = j
+        if min_idx != i:
+            arr[i], arr[min_idx] = arr[min_idx], arr[i]
+            swaps += 1
+    
+    return arr, comparisons, swaps
 
 
 # ---------------------------------------------------------------------------
