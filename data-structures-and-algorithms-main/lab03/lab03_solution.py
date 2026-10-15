@@ -273,7 +273,61 @@ def self_check() -> None:
     # Счётчики: у сортировки выбором ровно n*(n-1)/2 сравнений на любом входе.
     _, comparisons, _ = selection_sort([3, 1, 2, 5, 4])
     assert comparisons == 10, "selection_sort: неверный счётчик сравнений"
+
+        # --- Инвариант 1: число обменов bubble_sort = число инверсий ---
+    def count_inversions(a: list) -> int:
+        """Число пар (i, j), i < j, a[i] > a[j]."""
+        return sum(
+            1
+            for i in range(len(a))
+            for j in range(i + 1, len(a))
+            if a[i] > a[j]
+        )
+
+    rng = random.Random(0)
+    for _ in range(50):
+        a = [rng.randint(-50, 50) for _ in range(rng.randint(0, 40))]
+        _, _, swaps = bubble_sort(a)
+        inv = count_inversions(a)
+        assert swaps == inv, (
+            f"bubble_sort: обменов {swaps}, инверсий {inv} на {a}"
+        )
+    print("  [1] bubble_sort: обмены == инверсии — OK")
+
+    # --- Инвариант 2: досрочный выход на упорядоченном входе ---
+    for n in [1, 2, 5, 10, 100]:
+        sorted_input = list(range(n))
+        _, comparisons, _ = bubble_sort(sorted_input)
+        expected = max(n - 1, 0)
+        assert comparisons == expected, (
+            f"bubble_sort: на упорядоченном n={n} сравнений "
+            f"{comparisons}, ожидалось {expected}"
+        )
+    print("  [2] bubble_sort: n-1 сравнений на упорядоченном входе — OK")
+
+    # --- Инвариант 3: число сдвигов insertion_sort = число инверсий ---
+    for _ in range(50):
+        a = [rng.randint(-50, 50) for _ in range(rng.randint(0, 40))]
+        _, _, shifts = insertion_sort(a)
+        inv = count_inversions(a)
+        assert shifts == inv, (
+            f"insertion_sort: сдвигов {shifts}, инверсий {inv} на {a}"
+        )
+    print("  [3] insertion_sort: сдвиги == инверсии — OK")
+
+    # --- Инвариант 4: selection_sort всегда n(n-1)/2 сравнений ---
+    for n in [1, 2, 5, 10, 100]:
+        expected = n * (n - 1) // 2
+        for cls_name, data in make_inputs(n, seed=42).items():
+            _, comparisons, _ = selection_sort(data)
+            assert comparisons == expected, (
+                f"selection_sort: на n={n} ({cls_name}) сравнений "
+                f"{comparisons}, ожидалось {expected}"
+            )
+    print("  [4] selection_sort: n(n-1)/2 сравнений на любом входе — OK")
+
     print("self_check: OK")
+
 
 
 # ---------------------------------------------------------------------------
